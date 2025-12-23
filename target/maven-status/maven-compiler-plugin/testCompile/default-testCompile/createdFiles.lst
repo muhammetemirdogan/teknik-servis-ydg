@@ -1,0 +1,5 @@
+com\example\teknikservis\selenium\BaseSeleniumTest.class
+com\example\teknikservis\integration\ServisKaydiServiceIT.class
+com\example\teknikservis\selenium\Senaryo1SeleniumTest.class
+com\example\teknikservis\selenium\Senaryo3SeleniumTest.class
+com\example\teknikservis\selenium\Senaryo2SeleniumTest.class

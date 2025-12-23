@@ -1,0 +1,17 @@
+com\example\teknikservis\repository\ServisKaydiParcasiRepository.class
+com\example\teknikservis\entity\Parca.class
+com\example\teknikservis\controller\ServisKaydiController.class
+com\example\teknikservis\entity\ServisKaydi$Durum.class
+com\example\teknikservis\entity\Cihaz.class
+com\example\teknikservis\service\impl\ServisKaydiServiceImpl.class
+com\example\teknikservis\TeknikServisApplication.class
+com\example\teknikservis\entity\ServisKaydiParcasi.class
+com\example\teknikservis\service\ServisKaydiService.class
+com\example\teknikservis\dto\ServisKaydiCreateRequest.class
+com\example\teknikservis\repository\CihazRepository.class
+com\example\teknikservis\entity\Kullanici.class
+com\example\teknikservis\repository\ParcaRepository.class
+com\example\teknikservis\entity\Kullanici$Rol.class
+com\example\teknikservis\repository\KullaniciRepository.class
+com\example\teknikservis\entity\ServisKaydi.class
+com\example\teknikservis\repository\ServisKaydiRepository.class

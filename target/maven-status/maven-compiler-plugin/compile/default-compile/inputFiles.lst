@@ -1,0 +1,15 @@
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\dto\ServisKaydiCreateRequest.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\entity\Cihaz.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\repository\ServisKaydiRepository.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\entity\ServisKaydi.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\service\ServisKaydiService.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\repository\ParcaRepository.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\repository\ServisKaydiParcasiRepository.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\entity\Parca.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\TeknikServisApplication.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\service\impl\ServisKaydiServiceImpl.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\controller\ServisKaydiController.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\entity\ServisKaydiParcasi.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\repository\KullaniciRepository.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\entity\Kullanici.java
+C:\Users\Dogan\OneDrive\Masaüstü\teknik-servis-projee\teknik-servis-proje\src\main\java\com\example\teknikservis\repository\CihazRepository.java
