@@ -1,29 +1,36 @@
 pipeline {
     agent any
 
+    environment {
+        // Jenkins'te oluşturduğun GitHub PAT credentials ID
+        GIT_CREDENTIALS = 'github-ydg-token'
+    }
+
     stages {
         stage('1- Checkout from GitHub') {
             steps {
-                // Eğer pipeline'ı 'Pipeline script from SCM' ile açarsan bu satır yeter:
-                checkout scm
-
-                // Alternatif:
-                // git url: 'https://github.com/KENDI_KULLANICI_ADIN/teknik-servis-proje.git', branch: 'main'
+                // Senin GitHub reposunu Jenkins'e çektiriyoruz
+                git branch: 'main',
+                    url: 'https://github.com/muhammetemirdogan/teknik-servis-proje.git',
+                    credentialsId: env.GIT_CREDENTIALS
             }
         }
 
         stage('2- Build') {
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                // Testleri şimdilik atlayarak jar üret
+                bat 'mvn -B -DskipTests clean package'
             }
         }
 
         stage('3- Unit Tests') {
             steps {
-                sh 'mvn -B test -DskipUnitTests=false -Dtest=*UnitTest'
+                // Sadece *UnitTest sınıflarını çalıştır
+                bat 'mvn -B test -DskipUnitTests=false -Dtest=*UnitTest'
             }
             post {
                 always {
+                    // JUnit raporlarını Jenkins’e yükle
                     junit 'target/surefire-reports/*.xml'
                 }
             }
@@ -31,10 +38,12 @@ pipeline {
 
         stage('4- Integration Tests') {
             steps {
-                sh 'mvn -B verify -DskipUnitTests=true'
+                // İleride integration test eklersek buradan çalışır (failsafe vs.)
+                bat 'mvn -B verify -DskipUnitTests=true'
             }
             post {
                 always {
+                    // Failsafe raporları (varsa)
                     junit 'target/failsafe-reports/*.xml'
                 }
             }
@@ -42,15 +51,17 @@ pipeline {
 
         stage('5- Docker Build & Run') {
             steps {
-                sh 'docker build -t teknik-servis-app .'
-                sh 'docker run -d --rm -p 8081:8081 --name teknik-servis-container teknik-servis-app'
+                // Docker imajını üret
+                bat 'docker build -t teknik-servis-app .'
+                // Container'ı 8081 portunda ayağa kaldır
+                bat 'docker run -d --rm -p 8081:8081 --name teknik-servis-container teknik-servis-app'
             }
         }
 
         stage('6- Selenium System Tests') {
             steps {
-                // Çalışan sisteme karşı 3 senaryo
-                sh 'mvn -B test -Dtest=*SeleniumTest'
+                // Çalışan sisteme karşı Selenium senaryolarını çalıştır
+                bat 'mvn -B test -Dtest=*SeleniumTest'
             }
             post {
                 always {
@@ -62,8 +73,8 @@ pipeline {
 
     post {
         always {
-            // Container açık kalmasın
-            sh 'docker stop teknik-servis-container || true'
+            // İş bittiğinde container ayakta kalmasın
+            bat 'docker stop teknik-servis-container || echo "Container zaten kapaliydi"'
         }
     }
 }
