@@ -4,20 +4,19 @@ pipeline {
     stages {
         stage('1- Checkout from GitHub') {
             steps {
-                // Bu job zaten "Pipeline script from SCM" olduğu için checkout scm yeterli
                 checkout scm
             }
         }
 
         stage('2- Build') {
             steps {
-                bat 'mvn -B -DskipTests clean package'
+                bat 'mvnw -B -DskipTests clean package'
             }
         }
 
         stage('3- Unit Tests') {
             steps {
-                bat 'mvn -B test -DskipUnitTests=false -Dtest=*UnitTest'
+                bat 'mvnw -B test -DskipUnitTests=false -Dtest=*UnitTest'
             }
             post {
                 always {
@@ -28,7 +27,7 @@ pipeline {
 
         stage('4- Integration Tests') {
             steps {
-                bat 'mvn -B verify -DskipUnitTests=true'
+                bat 'mvnw -B verify -DskipUnitTests=true'
             }
             post {
                 always {
@@ -46,7 +45,7 @@ pipeline {
 
         stage('6- Selenium System Tests') {
             steps {
-                bat 'mvn -B test -Dtest=*SeleniumTest'
+                bat 'mvnw -B test -Dtest=*SeleniumTest'
             }
             post {
                 always {
@@ -58,7 +57,7 @@ pipeline {
 
     post {
         always {
-            // Container açık kalırsa durdur
+            // Container açık kalmışsa, docker yoksa bile hata kodunu 0’a çekiyoruz
             bat 'docker stop teknik-servis-container || exit /b 0'
         }
     }
