@@ -2,8 +2,8 @@ package com.example.teknikservis.integration;
 
 import com.example.teknikservis.entity.Cihaz;
 import com.example.teknikservis.entity.Kullanici;
+import com.example.teknikservis.entity.ServisDurumu;
 import com.example.teknikservis.entity.ServisKaydi;
-import com.example.teknikservis.entity.Durum; // enum senin projendeki pakete gore olsun
 import com.example.teknikservis.repository.CihazRepository;
 import com.example.teknikservis.repository.KullaniciRepository;
 import com.example.teknikservis.service.ServisKaydiService;
@@ -31,20 +31,22 @@ class ServisKaydiServiceIT {
 
     @Test
     void servis_kaydi_olustur_ve_iptal_akisi_basarili() {
-        // 1) data.sql'den gelen hazir musteri ve teknisyen
-        Kullanici musteri = kullaniciRepository
-                .findByEmail("ali.musteri@example.com")
-                .orElseThrow(() -> new IllegalStateException("Musteri bulunamadi"));
+        // 1) Hazir musteriyi ve teknisyeni kullan (seed data)
+        Kullanici musteri = kullaniciRepository.findByEmail("ali.musteri@example.com")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Test icin 'Ali Musteri' kullanicisi bulunamadi"
+                ));
 
-        Kullanici teknisyen = kullaniciRepository
-                .findByEmail("ayse.teknisyen@example.com")
-                .orElseThrow(() -> new IllegalStateException("Teknisyen bulunamadi"));
+        Kullanici teknisyen = kullaniciRepository.findByEmail("ayse.teknisyen@example.com")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Test icin 'Ayse Teknisyen' kullanicisi bulunamadi"
+                ));
 
-        // 2) Bu musterinin cihazini olustur
+        // 2) Bu musterinin bir cihazini olustur
         Cihaz cihaz = new Cihaz();
-        cihaz.setMarka("Test Marka");
-        cihaz.setModel("Model X");
-        cihaz.setSeriNo("SN-0001");
+        cihaz.setMarka("TestMarka-ServisIT");
+        cihaz.setModel("TestModel-ServisIT");
+        cihaz.setSeriNo("SN-IT-002");
         cihaz.setMusteri(musteri);
         cihaz = cihazRepository.save(cihaz);
 
@@ -53,19 +55,17 @@ class ServisKaydiServiceIT {
                 musteri.getId(),
                 cihaz.getId(),
                 teknisyen.getId(),
-                "Test ariza",
+                "Servis kaydi IT testi",
                 LocalDateTime.now()
         );
 
-        assertNotNull(kayit.getId());
-        assertEquals(Durum.ACIK, kayit.getDurum());
+        assertNotNull(kayit.getId(), "Olusan servis kaydinin ID'si olmali");
+        assertEquals(ServisDurumu.ACIK, kayit.getDurum(), "Yeni servis kaydi ACIK baslamali");
 
-        // 4) Musteri kendi kaydini iptal ediyor
-        servisKaydiService.cancelServisKaydi(kayit.getId(), musteri.getId());
+        // 4) İptal akisini dene (servisKaydiService'de böyle bir metot varsa)
+        kayit = servisKaydiService.cancelServisKaydi(kayit.getId(), "Musteri iptal etti");
 
-        ServisKaydi iptalEdilmis =
-                servisKaydiService.getServisKaydiById(kayit.getId()).orElseThrow();
-
-        assertEquals(Durum.IPTAL, iptalEdilmis.getDurum());
+        assertEquals(ServisDurumu.IPTAL, kayit.getDurum(), "Iptal sonrasi durum IPTAL olmali");
+        assertNotNull(kayit.getKapanisTarihi(), "Iptal edilen kaydin kapanis tarihi set edilmeli");
     }
 }

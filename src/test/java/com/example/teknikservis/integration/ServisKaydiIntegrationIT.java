@@ -31,35 +31,39 @@ class ServisKaydiIntegrationIT {
 
     @Test
     void yeniServisKaydiOlusturupMusteriyeGoreListeleyebilmeliyiz() {
-        // 1) data.sql ile gelen hazir musteriyi kullan
-        Kullanici musteri = kullaniciRepository
-                .findByEmail("ali.musteri@example.com")
-                .orElseThrow(() -> new IllegalStateException("Test icin musteri bulunamadi"));
+        // 1) HAZIR MÜŞTERİ KULLAN: Ali Musteri
+        Kullanici musteri = kullaniciRepository.findByEmail("ali.musteri@example.com")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Test icin 'Ali Musteri' kullanicisi bulunamadi (data.sql / seed data kontrol et)"
+                ));
 
-        // 2) Bu musterinin uzerine yeni bir cihaz ac
+        // 2) Bu müşteriye ait yeni bir cihaz oluştur
         Cihaz cihaz = new Cihaz();
-        cihaz.setMarka("Test Marka");
-        cihaz.setModel("Test Model");
-        cihaz.setSeriNo("SN-TEST-001");
+        cihaz.setMarka("TestMarka-IT");
+        cihaz.setModel("TestModel-IT");
+        cihaz.setSeriNo("SN-IT-001");
         cihaz.setMusteri(musteri);
         cihaz = cihazRepository.save(cihaz);
 
-        // 3) Servis kaydini olustur
+        // 3) Servis kaydı oluştur
         ServisKaydi kayit = servisKaydiService.createServisKaydi(
                 musteri.getId(),
                 cihaz.getId(),
-                null, // teknisyenId zorunlu degilse
-                "Test ariza kaydi",
+                null, // teknisyen zorunlu değilse null
+                "Integration testi ariza kaydi",
                 LocalDateTime.now()
         );
 
-        assertNotNull(kayit.getId(), "Servis kaydi kaydedilmeli ve ID donmeli");
+        assertNotNull(kayit.getId(), "Servis kaydinin bir ID'si olmali");
 
-        // 4) Musteriye gore listeleyince bu kayit gelmeli
+        // 4) Musteriye gore kayitlari çekince bu kayıt gelmeli
         List<ServisKaydi> musteriKayitlari =
                 servisKaydiService.getServisKayitlariForMusteri(musteri.getId());
 
-        assertFalse(musteriKayitlari.isEmpty(),
-                "Musteri icin en az bir servis kaydi donebilmeli");
+        assertFalse(musteriKayitlari.isEmpty(), "Musterinin en az bir servis kaydi olmali");
+        assertTrue(
+                musteriKayitlari.stream().anyMatch(k -> k.getId().equals(kayit.getId())),
+                "Olusturulan servis kaydi musterinin listesinde bulunmali"
+        );
     }
 }
