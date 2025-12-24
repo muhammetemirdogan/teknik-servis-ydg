@@ -38,44 +38,40 @@ pipeline {
 
         stage('4- Integration Tests') {
             when {
-                // Şimdilik pasif, ileride aktif edeceğiz
-                expression { return false }
+                expression { return false } // ileride açarız
             }
             steps {
-                echo 'Buraya Integration test komutları gelecek (ileri aşama için)'
+                echo 'Buraya integration test komutlari gelecek (ileri asama icin)'
             }
         }
 
-       stage('5- Docker Build & Run') {
-           steps {
-               bat """
-               docker build -t %DOCKER_IMAGE% .
-               docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
-               """
-           }
-       }
-
+        stage('5- Docker Build & Run') {
+            steps {
+                bat """
+                docker build -t %DOCKER_IMAGE% .
+                docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
+                """
+            }
+        }
 
         stage('6- Selenium System Tests') {
             when {
-                // Selenium testleri de şimdilik pasif
-                expression { return false }
+                expression { return false } // ileride açarız
             }
             steps {
-                echo 'Buraya Selenium test komutları gelecek (ileri aşama için)'
+                echo 'Buraya Selenium test komutlari gelecek (ileri asama icin)'
             }
         }
     }
 
     post {
         always {
-            // 1) Test raporlarını HER YERDEN ara
-            // 2) Eğer nedense rapor bulamazsa bile build’i FAIL yapma
-            junit allowEmptyResults: true, testResults: '**/surefire-reports/*.xml'
+            // Test raporlarini bulursa okusun, bulamazsa da build FAIL yapma
+            junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
 
-            // 3) Container çalışıyorsa durdur, yoksa hata verme
+            // Container calisiyorsa durdur, yoksa hata verme
             bat """
-            docker stop teknik-servis-container || exit /b 0
+            docker stop %DOCKER_CONTAINER% || exit /b 0
             """
         }
     }
