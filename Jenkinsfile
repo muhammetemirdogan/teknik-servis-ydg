@@ -7,7 +7,6 @@ pipeline {
     }
 
     stages {
-
         stage('1- Checkout from GitHub') {
             steps {
                 checkout([
@@ -23,54 +22,64 @@ pipeline {
 
         stage('2- Build') {
             steps {
-                bat 'mvnw -B -DskipTests clean package'
+                bat """
+                mvnw -B -DskipTests clean package
+                """
             }
         }
 
         stage('3- Unit Tests') {
             steps {
-                bat 'mvnw -B test'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
+                bat """
+                mvnw -B test
+                """
             }
         }
 
         stage('4- Integration Tests') {
             when {
+                // Şimdilik pasif, ileride aktif edeceğiz
                 expression { return false }
             }
             steps {
-                echo 'Integration test komutlari (ileri asama icin)'
+                echo 'Buraya Integration test komutları gelecek (ileri aşama için)'
             }
         }
 
         stage('5- Docker Build & Run') {
+            when {
+                // Şimdilik pasif, ileride aktif edeceğiz
+                expression { return false }
+            }
             steps {
                 bat """
-docker build -t %DOCKER_IMAGE% .
-docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
-"""
+                docker build -t %DOCKER_IMAGE% .
+                docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
+                """
             }
         }
 
         stage('6- Selenium System Tests') {
             when {
+                // Selenium testleri de şimdilik pasif
                 expression { return false }
             }
             steps {
-                echo 'Buraya Selenium test komutlari gelecek (ileri asama icin)'
+                echo 'Buraya Selenium test komutları gelecek (ileri aşama için)'
             }
         }
     }
 
     post {
         always {
-            bat '''
-docker stop teknik-servis-container || exit /b 0
-'''
+            // 1) Test raporlarını HER YERDEN ara
+            // 2) Eğer nedense rapor bulamazsa bile build’i FAIL yapma
+            junit allowEmptyResults: true, testResults: '**/surefire-reports/*.xml'
+
+            // 3) Container çalışıyorsa durdur, yoksa hata verme
+            bat """
+            docker stop teknik-servis-container || exit /b 0
+            """
         }
     }
 }
