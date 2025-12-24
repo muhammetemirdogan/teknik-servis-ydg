@@ -46,18 +46,15 @@ pipeline {
             }
         }
 
-        stage('5- Docker Build & Run') {
-            when {
-                // Şimdilik pasif, ileride aktif edeceğiz
-                expression { return false }
-            }
-            steps {
-                bat """
-                docker build -t %DOCKER_IMAGE% .
-                docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
-                """
-            }
-        }
+       stage('5- Docker Build & Run') {
+           steps {
+               bat """
+               docker build -t %DOCKER_IMAGE% .
+               docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
+               """
+           }
+       }
+
 
         stage('6- Selenium System Tests') {
             when {
