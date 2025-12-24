@@ -37,14 +37,14 @@ pipeline {
             }
         }
 
-        stage('4- Integration Tests') {
-            when {
-                expression { return false } // şimdilik kapalı
+            stage('4- Integration Tests') {
+                steps {
+                    bat """
+                    mvnw -B -Dtest=*IT test
+                    """
+                }
             }
-            steps {
-                echo 'Buraya integration test komutlari gelecek (ileri asama icin)'
-            }
-        }
+
 
         stage('5- Docker Build & Run') {
             steps {
