@@ -3,6 +3,7 @@ package com.example.teknikservis.integration;
 import com.example.teknikservis.entity.Cihaz;
 import com.example.teknikservis.entity.Kullanici;
 import com.example.teknikservis.entity.ServisKaydi;
+import com.example.teknikservis.entity.Durum; // enum senin projendeki pakete gore olsun
 import com.example.teknikservis.repository.CihazRepository;
 import com.example.teknikservis.repository.KullaniciRepository;
 import com.example.teknikservis.service.ServisKaydiService;
@@ -12,13 +13,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
-class ServisKaydiIntegrationIT {
+class ServisKaydiServiceIT {
 
     @Autowired
     private ServisKaydiService servisKaydiService;
@@ -30,36 +30,42 @@ class ServisKaydiIntegrationIT {
     private CihazRepository cihazRepository;
 
     @Test
-    void yeniServisKaydiOlusturupMusteriyeGoreListeleyebilmeliyiz() {
-        // 1) data.sql ile gelen hazir musteriyi kullan
+    void servis_kaydi_olustur_ve_iptal_akisi_basarili() {
+        // 1) data.sql'den gelen hazir musteri ve teknisyen
         Kullanici musteri = kullaniciRepository
                 .findByEmail("ali.musteri@example.com")
-                .orElseThrow(() -> new IllegalStateException("Test icin musteri bulunamadi"));
+                .orElseThrow(() -> new IllegalStateException("Musteri bulunamadi"));
 
-        // 2) Bu musterinin uzerine yeni bir cihaz ac
+        Kullanici teknisyen = kullaniciRepository
+                .findByEmail("ayse.teknisyen@example.com")
+                .orElseThrow(() -> new IllegalStateException("Teknisyen bulunamadi"));
+
+        // 2) Bu musterinin cihazini olustur
         Cihaz cihaz = new Cihaz();
         cihaz.setMarka("Test Marka");
-        cihaz.setModel("Test Model");
-        cihaz.setSeriNo("SN-TEST-001");
+        cihaz.setModel("Model X");
+        cihaz.setSeriNo("SN-0001");
         cihaz.setMusteri(musteri);
         cihaz = cihazRepository.save(cihaz);
 
-        // 3) Servis kaydini olustur
+        // 3) Servis kaydi olustur
         ServisKaydi kayit = servisKaydiService.createServisKaydi(
                 musteri.getId(),
                 cihaz.getId(),
-                null, // teknisyenId zorunlu degilse
-                "Test ariza kaydi",
+                teknisyen.getId(),
+                "Test ariza",
                 LocalDateTime.now()
         );
 
-        assertNotNull(kayit.getId(), "Servis kaydi kaydedilmeli ve ID donmeli");
+        assertNotNull(kayit.getId());
+        assertEquals(Durum.ACIK, kayit.getDurum());
 
-        // 4) Musteriye gore listeleyince bu kayit gelmeli
-        List<ServisKaydi> musteriKayitlari =
-                servisKaydiService.getServisKayitlariForMusteri(musteri.getId());
+        // 4) Musteri kendi kaydini iptal ediyor
+        servisKaydiService.cancelServisKaydi(kayit.getId(), musteri.getId());
 
-        assertFalse(musteriKayitlari.isEmpty(),
-                "Musteri icin en az bir servis kaydi donebilmeli");
+        ServisKaydi iptalEdilmis =
+                servisKaydiService.getServisKaydiById(kayit.getId()).orElseThrow();
+
+        assertEquals(Durum.IPTAL, iptalEdilmis.getDurum());
     }
 }
