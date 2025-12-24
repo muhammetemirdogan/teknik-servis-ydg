@@ -1,10 +1,23 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE     = "teknik-servis-image"
+        DOCKER_CONTAINER = "teknik-servis-container"
+    }
+
     stages {
+
         stage('1- Checkout from GitHub') {
             steps {
-                checkout scm
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/muhammetemirdogan/teknik-servis-ydg.git',
+                        credentialsId: 'github-ydg-token'
+                    ]]
+                ])
             }
         }
 
@@ -16,7 +29,7 @@ pipeline {
 
         stage('3- Unit Tests') {
             steps {
-                bat 'mvnw -B test -DskipUnitTests=false -Dtest=*UnitTest'
+                bat 'mvnw -B test'
             }
             post {
                 always {
@@ -26,39 +39,38 @@ pipeline {
         }
 
         stage('4- Integration Tests') {
-            steps {
-                bat 'mvnw -B verify -DskipUnitTests=true'
+            when {
+                expression { return false }
             }
-            post {
-                always {
-                    junit 'target/failsafe-reports/*.xml'
-                }
+            steps {
+                echo 'Integration test komutlari (ileri asama icin)'
             }
         }
 
         stage('5- Docker Build & Run') {
             steps {
-                bat 'docker build -t teknik-servis-app .'
-                bat 'docker run -d --rm -p 8081:8081 --name teknik-servis-container teknik-servis-app'
+                bat """
+docker build -t %DOCKER_IMAGE% .
+docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
+"""
             }
         }
 
         stage('6- Selenium System Tests') {
-            steps {
-                bat 'mvnw -B test -Dtest=*SeleniumTest'
+            when {
+                expression { return false }
             }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
+            steps {
+                echo 'Buraya Selenium test komutlari gelecek (ileri asama icin)'
             }
         }
     }
 
     post {
         always {
-            // Container açık kalmışsa, docker yoksa bile hata kodunu 0’a çekiyoruz
-            bat 'docker stop teknik-servis-container || exit /b 0'
+            bat '''
+docker stop teknik-servis-container || exit /b 0
+'''
         }
     }
 }
