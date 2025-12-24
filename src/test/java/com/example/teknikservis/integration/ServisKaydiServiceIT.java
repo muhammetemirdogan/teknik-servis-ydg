@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,35 +29,43 @@ class ServisKaydiServiceIT {
     @Autowired
     private CihazRepository cihazRepository;
 
+    /**
+     * Amaç: Servis kaydı oluşturulurken;
+     *  - hazır müşteriyi (id=1) kullanalım
+     *  - o müşteriye bağlı yeni bir cihaz oluşturalım
+     *  - createServisKaydi ile kayıt açalım
+     *  - ilişkilerin doğru kurulduğunu doğrulayalım
+     */
     @Test
-    void servis_kaydi_olustur_ve_musteriye_gore_listeleyebiliriz() {
-        // data.sql icindeki hazir musteri (id=1) kullaniliyor
-        Kullanici musteri = kullaniciRepository.findById(1L)
-                .orElseThrow(() -> new IllegalStateException("Test icin musteri bulunamadi (id=1)"));
+    void servis_kaydi_olusturulurken_musteri_ve_cihaz_baglantisi_kurulur() {
 
-        // Musteriye ait yeni bir cihaz olustur
+        // data.sql içindeki hazır müşteri: id = 1, Ali Musteri
+        Optional<Kullanici> musteriOpt = kullaniciRepository.findById(1L);
+        assertTrue(musteriOpt.isPresent(), "id=1 musterisi hazir olmali");
+        Kullanici musteri = musteriOpt.get();
+
+        // Bu müşteriye ait bir cihaz oluşturalım
         Cihaz cihaz = new Cihaz();
         cihaz.setMusteri(musteri);
-        cihaz.setMarka("TestMarka");
-        cihaz.setModel("TestModel");
-        cihaz.setSeriNo("SER123");
+        cihaz.setMarka("ServiceIT Marka");
+        cihaz.setModel("ServiceIT Model");
+        cihaz.setSeriNo("SVC-001");
         cihaz = cihazRepository.save(cihaz);
 
-        // Servis kaydi olustur
+        // Servis kaydı oluştur
         ServisKaydi kayit = servisKaydiService.createServisKaydi(
                 musteri.getId(),
                 cihaz.getId(),
-                null, // teknisyenId simdilik null
-                "Test ariza kaydi",
+                null, // teknisyen opsiyonel, null gönderdik
+                "Service IT ariza kaydi",
                 LocalDateTime.now()
         );
 
-        assertNotNull(kayit.getId(), "Servis kaydinin ID'si dolu olmalı");
-
-        // Musteri icin servis kayitlari listelendiginizde bu kayit gelmeli
-        List<ServisKaydi> musteriKayitlari =
-                servisKaydiService.getServisKayitlariForMusteri(musteri.getId());
-
-        assertFalse(musteriKayitlari.isEmpty(), "Musterinin en az bir servis kaydi olmali");
+        // ASSERTIONLAR
+        assertNotNull(kayit.getId(), "Servis kaydi kaydedilmeli");
+        assertNotNull(kayit.getCihaz(), "Servis kaydinin bagli oldugu bir cihaz olmali");
+        assertEquals(musteri.getId(),
+                kayit.getCihaz().getMusteri().getId(),
+                "Servis kaydinin musterisi bekledigimiz musteri olmali");
     }
 }
