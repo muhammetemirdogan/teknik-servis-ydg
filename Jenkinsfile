@@ -49,10 +49,11 @@ pipeline {
             steps {
                 bat """
                 docker build -t %DOCKER_IMAGE% .
-                docker run -d --rm -p 8080:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
+                docker run -d --rm -p 8081:8080 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
                 """
             }
         }
+
 
         stage('6- Selenium System Tests') {
             when {
