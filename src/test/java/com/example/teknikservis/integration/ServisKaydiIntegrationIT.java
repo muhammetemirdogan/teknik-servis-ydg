@@ -9,10 +9,12 @@ import com.example.teknikservis.service.ServisKaydiService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.sql.init.mode=never",
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
-
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ServisKaydiIntegrationIT {
 
     @Autowired
@@ -35,18 +37,20 @@ class ServisKaydiIntegrationIT {
 
     @Test
     void yeniServisKaydiOlusturupMusteriyeGoreListeleyebilmeliyiz() {
+        String uniq = UUID.randomUUID().toString().substring(0, 8);
+
         // 1) Test musterisi olustur
         Kullanici musteri = new Kullanici();
         musteri.setAd("Integration Musteri");
-        musteri.setEmail("integration.musteri@test.com");
+        musteri.setEmail("integration.musteri." + uniq + "@test.com");
         musteri.setSifre("1234");
         musteri.setRol(Kullanici.Rol.MUSTERI);
         musteri = kullaniciRepository.save(musteri);
 
-        // 2) Istersen teknisyen de olusturalim (zorunlu degil ama daha saglam)
+        // 2) Teknisyen olustur (opsiyonel ama saglam)
         Kullanici teknisyen = new Kullanici();
         teknisyen.setAd("Integration Teknisyen");
-        teknisyen.setEmail("integration.teknisyen@test.com");
+        teknisyen.setEmail("integration.teknisyen." + uniq + "@test.com");
         teknisyen.setSifre("1234");
         teknisyen.setRol(Kullanici.Rol.TEKNISYEN);
         teknisyen = kullaniciRepository.save(teknisyen);
@@ -56,7 +60,7 @@ class ServisKaydiIntegrationIT {
         cihaz.setMusteri(musteri);
         cihaz.setMarka("IntegrationTest Marka");
         cihaz.setModel("IntegrationTest Model");
-        cihaz.setSeriNo("INT-001");
+        cihaz.setSeriNo("INT-" + uniq);
         cihaz = cihazRepository.save(cihaz);
 
         // 4) Servis kaydi olustur
