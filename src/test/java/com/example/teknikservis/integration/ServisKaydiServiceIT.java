@@ -5,6 +5,7 @@ import com.example.teknikservis.entity.Kullanici;
 import com.example.teknikservis.entity.ServisKaydi;
 import com.example.teknikservis.repository.CihazRepository;
 import com.example.teknikservis.repository.KullaniciRepository;
+import com.example.teknikservis.repository.ServisKaydiRepository;
 import com.example.teknikservis.service.ServisKaydiService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,43 +29,40 @@ class ServisKaydiServiceIT {
     @Autowired
     private CihazRepository cihazRepository;
 
-    /**
-     * Amaç: Servis kaydı oluşturulurken;
-     *  - hazır müşteriyi (id=1) kullanalım
-     *  - o müşteriye bağlı yeni bir cihaz oluşturalım
-     *  - createServisKaydi ile kayıt açalım
-     *  - ilişkilerin doğru kurulduğunu doğrulayalım
-     */
+    @Autowired
+    private ServisKaydiRepository servisKaydiRepository;
+
     @Test
-    void servis_kaydi_olusturulurken_musteri_ve_cihaz_baglantisi_kurulur() {
+    void servis_kaydi_olusturulup_dbde_bulunmali() {
+        // 1) Hazir musteriyi data.sql'den bul
+        Kullanici musteri = kullaniciRepository.findByEmail("ali.musteri@example.com")
+                .orElseThrow(() -> new IllegalStateException("Test icin musteri bulunamadi"));
 
-        // data.sql içindeki hazır müşteri: id = 1, Ali Musteri
-        Optional<Kullanici> musteriOpt = kullaniciRepository.findById(1L);
-        assertTrue(musteriOpt.isPresent(), "id=1 musterisi hazir olmali");
-        Kullanici musteri = musteriOpt.get();
-
-        // Bu müşteriye ait bir cihaz oluşturalım
+        // 2) Musteriye bagli yeni cihaz olustur
         Cihaz cihaz = new Cihaz();
         cihaz.setMusteri(musteri);
-        cihaz.setMarka("ServiceIT Marka");
-        cihaz.setModel("ServiceIT Model");
-        cihaz.setSeriNo("SVC-001");
+        cihaz.setMarka("IT-MARKA");
+        cihaz.setModel("IT-MODEL");
+        cihaz.setSeriNo("IT-SERI-123");
         cihaz = cihazRepository.save(cihaz);
 
-        // Servis kaydı oluştur
+        // 3) Servis kaydi olustur (service uzerinden)
         ServisKaydi kayit = servisKaydiService.createServisKaydi(
                 musteri.getId(),
                 cihaz.getId(),
-                null, // teknisyen opsiyonel, null gönderdik
-                "Service IT ariza kaydi",
+                null, // teknisyen yok
+                "Integration test ariza kaydi",
                 LocalDateTime.now()
         );
 
-        // ASSERTIONLAR
-        assertNotNull(kayit.getId(), "Servis kaydi kaydedilmeli");
-        assertNotNull(kayit.getCihaz(), "Servis kaydinin bagli oldugu bir cihaz olmali");
-        assertEquals(musteri.getId(),
-                kayit.getCihaz().getMusteri().getId(),
-                "Servis kaydinin musterisi bekledigimiz musteri olmali");
+        assertNotNull(kayit.getId(), "Olusan kaydin ID'si dolu olmali");
+
+        // 4) Kaydi repository'den tekrar oku ve kontrol et
+        ServisKaydi dbKayit = servisKaydiRepository.findById(kayit.getId())
+                .orElseThrow(() -> new IllegalStateException("Kayit DB'de bulunamadi"));
+
+        assertEquals(musteri.getId(), dbKayit.getCihaz().getMusteri().getId());
+        assertEquals(cihaz.getId(), dbKayit.getCihaz().getId());
+        assertEquals("Integration test ariza kaydi", dbKayit.getAciklama());
     }
 }
