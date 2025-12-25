@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,21 +29,25 @@ class ServisKaydiIntegrationIT {
     @Autowired
     private CihazRepository cihazRepository;
 
-    /**
-     * Amaç:
-     *  - Hazır müşteri (id=1) ile yeni bir cihaz ve servis kaydı oluştur
-     *  - Sonra getServisKayitlariForMusteri ile listeleyip,
-     *    oluşturulan kaydın listede geldiğini doğrula.
-     */
     @Test
     void yeniServisKaydiOlusturupMusteriyeGoreListeleyebilmeliyiz() {
+        // 1) Test musterisi olustur
+        Kullanici musteri = new Kullanici();
+        musteri.setAd("Integration Musteri");
+        musteri.setEmail("integration.musteri@test.com");
+        musteri.setSifre("1234");
+        musteri.setRol(Kullanici.Rol.MUSTERI);
+        musteri = kullaniciRepository.save(musteri);
 
-        // data.sql içindeki hazır müşteri: id = 1, Ali Musteri
-        Optional<Kullanici> musteriOpt = kullaniciRepository.findById(1L);
-        assertTrue(musteriOpt.isPresent(), "id=1 musterisi hazir olmali");
-        Kullanici musteri = musteriOpt.get();
+        // 2) Istersen teknisyen de olusturalim (zorunlu degil ama daha saglam)
+        Kullanici teknisyen = new Kullanici();
+        teknisyen.setAd("Integration Teknisyen");
+        teknisyen.setEmail("integration.teknisyen@test.com");
+        teknisyen.setSifre("1234");
+        teknisyen.setRol(Kullanici.Rol.TEKNISYEN);
+        teknisyen = kullaniciRepository.save(teknisyen);
 
-        // Bu müşteriye ait bir cihaz oluşturalım
+        // 3) Musteriye ait cihaz olustur
         Cihaz cihaz = new Cihaz();
         cihaz.setMusteri(musteri);
         cihaz.setMarka("IntegrationTest Marka");
@@ -52,25 +55,18 @@ class ServisKaydiIntegrationIT {
         cihaz.setSeriNo("INT-001");
         cihaz = cihazRepository.save(cihaz);
 
-        // Teknisyen zorunlu değilse null, zorunluysa data.sql' den 2. kullaniciyi alabiliriz
-        Long teknisyenId = null;
-        Optional<Kullanici> teknisyenOpt = kullaniciRepository.findById(2L);
-        if (teknisyenOpt.isPresent()) {
-            teknisyenId = teknisyenOpt.get().getId();
-        }
-
-        // Servis kaydı oluştur
+        // 4) Servis kaydi olustur
         ServisKaydi kayit = servisKaydiService.createServisKaydi(
                 musteri.getId(),
                 cihaz.getId(),
-                teknisyenId,
+                teknisyen.getId(),
                 "Integration test ariza kaydi",
                 LocalDateTime.now()
         );
 
         assertNotNull(kayit.getId(), "Servis kaydi kaydedilmeli ve ID donmeli");
 
-        // Müşterinin kayıtlarını listele
+        // 5) Musterinin kayitlarini listele
         List<ServisKaydi> musteriKayitlari =
                 servisKaydiService.getServisKayitlariForMusteri(musteri.getId());
 

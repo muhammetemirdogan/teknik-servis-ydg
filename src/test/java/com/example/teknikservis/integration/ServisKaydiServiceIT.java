@@ -34,9 +34,13 @@ class ServisKaydiServiceIT {
 
     @Test
     void servis_kaydi_olusturulup_dbde_bulunmali() {
-        // 1) Hazir musteriyi data.sql'den bul
-        Kullanici musteri = kullaniciRepository.findByEmail("ali.musteri@example.com")
-                .orElseThrow(() -> new IllegalStateException("Test icin musteri bulunamadi"));
+        // 1) Test musterisi olustur (seed'e bagimli kalma)
+        Kullanici musteri = new Kullanici();
+        musteri.setAd("IT Musteri");
+        musteri.setEmail("it.musteri@test.com");
+        musteri.setSifre("1234");
+        musteri.setRol(Kullanici.Rol.MUSTERI);
+        musteri = kullaniciRepository.save(musteri);
 
         // 2) Musteriye bagli yeni cihaz olustur
         Cihaz cihaz = new Cihaz();
