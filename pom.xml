@@ -87,11 +87,13 @@
                 </configuration>
             </plugin>
 
-            <!-- Spring Boot plugin (jar üretmek için) -->
+            <!-- Spring Boot plugin (jar üretmek + spring-boot:run için) -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+
             </plugin>
+
 
             <!-- UNIT TEST: *UnitTest.java -->
             <plugin>

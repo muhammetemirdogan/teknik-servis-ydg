@@ -16,5 +16,8 @@ public interface ServisKaydiRepository extends JpaRepository<ServisKaydi, Long> 
             LocalDateTime bit
     );
 
-    java.util.List<ServisKaydi> findByCihaz(Cihaz cihaz);
+    // Senaryo 2 için
+    List<ServisKaydi> findByCihaz_Musteri_Id(Long musteriId);
+
+    List<ServisKaydi> findByCihaz(Cihaz cihaz);
 }

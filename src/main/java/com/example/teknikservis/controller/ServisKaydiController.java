@@ -1,48 +1,33 @@
 package com.example.teknikservis.controller;
 
-import com.example.teknikservis.dto.ServisKaydiCreateRequest;
 import com.example.teknikservis.entity.ServisKaydi;
-import com.example.teknikservis.service.ServisKaydiService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import com.example.teknikservis.repository.ServisKaydiRepository;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/servis-kayitlari")
 public class ServisKaydiController {
 
-    private final ServisKaydiService servisKaydiService;
+    private final ServisKaydiRepository servisKaydiRepository;
 
-    public ServisKaydiController(ServisKaydiService servisKaydiService) {
-        this.servisKaydiService = servisKaydiService;
+    public ServisKaydiController(ServisKaydiRepository servisKaydiRepository) {
+        this.servisKaydiRepository = servisKaydiRepository;
     }
 
     @GetMapping
-    public java.util.List<ServisKaydi> getAll() {
-        return servisKaydiService.getAllServisKayitlari();
+    public List<ServisKaydi> tumServisKayitlari() {
+        return servisKaydiRepository.findAll();
     }
 
     @GetMapping("/musteri/{musteriId}")
-    public java.util.List<ServisKaydi> getForMusteri(@PathVariable Long musteriId) {
-        return servisKaydiService.getServisKayitlariForMusteri(musteriId);
+    public List<ServisKaydi> musteriyeGoreServisKayitlari(@PathVariable Long musteriId) {
+        return servisKaydiRepository.findByCihaz_Musteri_Id(musteriId);
     }
 
     @PostMapping
-    public ResponseEntity<ServisKaydi> create(@RequestBody ServisKaydiCreateRequest request) {
-        ServisKaydi kayit = servisKaydiService.createServisKaydi(
-                request.getMusteriId(),
-                request.getCihazId(),
-                request.getTeknisyenId(),
-                request.getAciklama(),
-                request.getAcilisTarihi()
-        );
-        return new ResponseEntity<>(kayit, HttpStatus.CREATED);
-    }
-
-    @PostMapping("/{servisKaydiId}/iptal")
-    public ResponseEntity<Void> cancel(@PathVariable Long servisKaydiId,
-                                       @RequestParam Long musteriId) {
-        servisKaydiService.cancelServisKaydi(servisKaydiId, musteriId);
-        return ResponseEntity.noContent().build();
+    public ServisKaydi servisKaydiEkle(@RequestBody ServisKaydi servisKaydi) {
+        return servisKaydiRepository.save(servisKaydi);
     }
 }
