@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Senaryo 1:
- *   /api/servis-kayitlari endpoint'i calisiyor mu ve
+ *   /api/servis-kayitlarii endpoint'i calisiyor mu ve
  *   ornek servis kayitlarini donuyor mu kontrol eder.
  *
  * Beklenen: data.sql icindeki "Ekran kirik" aciklamasi
@@ -16,18 +16,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class Senaryo1SeleniumTest extends BaseSeleniumTest {
 
     @Test
-    @DisplayName("Tum servis kayitlari listelenebilmeli")
+    @DisplayName("Servis kayitlari JSON listesi 'Ekran kirik' aciklamasini icermeli")
     void tum_servis_kayitlari_listelenebiliyor_mu() {
-        // REST endpoint'ine git
         driver.get(baseUrl + "/api/servis-kayitlari");
 
-        // Sayfa kaynagini (JSON metni) al
         String pageSource = driver.getPageSource();
+        System.out.println("=== PAGE SOURCE START ===");
+        System.out.println(pageSource);
+        System.out.println("=== PAGE SOURCE END ===");
 
-        // Ornek veri: data.sql'den geliyor
-        assertTrue(
-                pageSource.contains("Ekran kirik"),
-                "Servis kayitlari JSON'unda 'Ekran kirik' aciklamasi bulunamadi!"
-        );
+        assertTrue(pageSource.contains("Ekran kirik"),
+                "Servis kayitlari JSON'unda 'Ekran kirik' aciklamasi bulunamadi!");
     }
+
 }
