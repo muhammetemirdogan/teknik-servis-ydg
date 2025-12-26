@@ -7,12 +7,11 @@ pipeline {
     }
 
     environment {
-        DOCKER_IMAGE     = "teknik-servis-image"
-        DOCKER_CONTAINER = "teknik-servis-container"
-        APP_PORT         = "8081"
-        BASE_URL         = "http://localhost:8081"
-        // Selenium tarafında okumak için (ister env'den ister -D ile)
-        SELENIUM_HEADLESS = "true"
+        DOCKER_IMAGE       = "teknik-servis-image"
+        DOCKER_CONTAINER   = "teknik-servis-container"
+        APP_PORT           = "8081"
+        BASE_URL           = "http://localhost:8081"
+        SELENIUM_HEADLESS  = "true"
     }
 
     stages {
@@ -64,49 +63,38 @@ pipeline {
         stage('5- Docker Build & Run') {
             steps {
                 bat '''
-                REM Dockerfile var mi kontrol et
                 if not exist Dockerfile (
-                  echo Dockerfile bulunamadi! repo root'a ekleyip commit/push yap.
+                  echo Dockerfile bulunamadi!
                   dir
                   exit /b 1
                 )
 
-                REM Eski container varsa sil
                 docker rm -f %DOCKER_CONTAINER% >NUL 2>NUL || echo No previous container
 
-                REM Port kullaniliyor mu kontrol et (OLDURME YOK)
                 netstat -aon | findstr :%APP_PORT% | findstr LISTENING >NUL
                 if %ERRORLEVEL%==0 (
-                  echo PORT %APP_PORT% dolu gorunuyor. Jenkins node uzerinde bu portu bosalt.
+                  echo PORT %APP_PORT% dolu. Bosalt ve tekrar dene.
                   netstat -aon | findstr :%APP_PORT% | findstr LISTENING
                   exit /b 1
                 )
 
-                REM Image build
                 docker build -t %DOCKER_IMAGE% .
 
-                REM Container run (container icinde 8081)
                 docker run -d --rm -p %APP_PORT%:8081 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
 
-                REM Uygulama ayaga kalkti mi kontrol (20 deneme)
-                set HEALTH_OK=0
+                REM ---- HEALTHCHECK (PowerShell - stabil) ----
+                powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+                  "$ErrorActionPreference='SilentlyContinue';" ^
+                  "$urls=@('%BASE_URL%/actuator/health','%BASE_URL%/api/servis-kayitlari');" ^
+                  "for($i=1;$i -le 40;$i++){" ^
+                  "  foreach($u in $urls){" ^
+                  "    try{ $r=Invoke-WebRequest -UseBasicParsing -Uri $u -TimeoutSec 2; if($r.StatusCode -ge 200 -and $r.StatusCode -lt 500){ Write-Host 'HEALTH OK:' $u; exit 0 } } catch {}" ^
+                  "  }" ^
+                  "  Start-Sleep -Seconds 2" ^
+                  "}" ^
+                  "exit 1"
 
-                for /L %%i in (1,1,20) do (
-                  REM once actuator varsa onu dene
-                  curl.exe -s -f "%BASE_URL%/actuator/health" >NUL 2>NUL && (
-                    set HEALTH_OK=1
-                    goto :healthdone
-                  )
-                  REM actuator yoksa API endpoint dene
-                  curl.exe -s -f "%BASE_URL%/api/servis-kayitlari" >NUL 2>NUL && (
-                    set HEALTH_OK=1
-                    goto :healthdone
-                  )
-                  timeout /t 2 >NUL
-                )
-
-                :healthdone
-                if "%HEALTH_OK%"=="0" (
+                if %ERRORLEVEL% NEQ 0 (
                   echo Uygulama ayaga kalkmadi! (healthcheck fail)
                   echo ---- docker ps ----
                   docker ps -a
@@ -120,92 +108,12 @@ pipeline {
             }
         }
 
-        // ---- Selenium Senaryolari (max 10'a kadar puan) ----
-
-        stage('6- Selenium Senaryo 1') {
+        stage('6- Selenium (All Scenarios)') {
             steps {
                 bat '''
                 mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo1SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-s1 ^
-                  -DbaseUrl=%BASE_URL% ^
-                  -Dheadless=%SELENIUM_HEADLESS% ^
-                  test
-                '''
-            }
-        }
-
-        stage('7- Selenium Senaryo 2') {
-            steps {
-                bat '''
-                mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo2SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-s2 ^
-                  -DbaseUrl=%BASE_URL% ^
-                  -Dheadless=%SELENIUM_HEADLESS% ^
-                  test
-                '''
-            }
-        }
-
-        stage('8- Selenium Senaryo 3') {
-            steps {
-                bat '''
-                mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo3SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-s3 ^
-                  -DbaseUrl=%BASE_URL% ^
-                  -Dheadless=%SELENIUM_HEADLESS% ^
-                  test
-                '''
-            }
-        }
-
-        stage('9- Selenium Senaryo 4') {
-            steps {
-                bat '''
-                mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo4SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-s4 ^
-                  -DbaseUrl=%BASE_URL% ^
-                  -Dheadless=%SELENIUM_HEADLESS% ^
-                  test
-                '''
-            }
-        }
-
-        stage('10- Selenium Senaryo 5') {
-            steps {
-                bat '''
-                mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo5SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-s5 ^
-                  -DbaseUrl=%BASE_URL% ^
-                  -Dheadless=%SELENIUM_HEADLESS% ^
-                  test
-                '''
-            }
-        }
-
-        stage('11- Selenium Senaryo 6') {
-            steps {
-                bat '''
-                mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo6SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-s6 ^
-                  -DbaseUrl=%BASE_URL% ^
-                  -Dheadless=%SELENIUM_HEADLESS% ^
-                  test
-                '''
-            }
-        }
-
-        stage('12- Selenium Senaryo 7') {
-            steps {
-                bat '''
-                mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo7SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-s7 ^
+                  -Dtest=com.example.teknikservis.selenium.Senaryo1SeleniumTest,com.example.teknikservis.selenium.Senaryo2SeleniumTest,com.example.teknikservis.selenium.Senaryo3SeleniumTest,com.example.teknikservis.selenium.Senaryo4SeleniumTest,com.example.teknikservis.selenium.Senaryo5SeleniumTest,com.example.teknikservis.selenium.Senaryo6SeleniumTest,com.example.teknikservis.selenium.Senaryo7SeleniumTest,com.example.teknikservis.selenium.Senaryo8SeleniumTest,com.example.teknikservis.selenium.Senaryo9SeleniumTest,com.example.teknikservis.selenium.Senaryo10SeleniumTest ^
+                  -Dsurefire.reportsDirectory=target/surefire-reports-selenium ^
                   -DbaseUrl=%BASE_URL% ^
                   -Dheadless=%SELENIUM_HEADLESS% ^
                   test
@@ -216,26 +124,19 @@ pipeline {
 
     post {
         always {
-            // Unit + IT + Selenium raporlari (hepsi target/surefire-reports-... icine gidiyor)
-            junit testResults: 'target/surefire-reports-*/TEST-*.xml,target/failsafe-reports/*.xml',
+            // Raporlari garanti yakala
+            junit testResults: 'target/**/TEST-*.xml',
                   allowEmptyResults: true
 
-            // (Opsiyonel) rapor xml'lerini artifact olarak da sakla
-            archiveArtifacts artifacts: 'target/surefire-reports-*/**/*.xml,target/failsafe-reports/**/*.xml', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'target/**/*.xml', allowEmptyArchive: true
 
-            // Container'i kapat (varsa)
+            // log al -> sonra kapat
             bat '''
-            docker rm -f %DOCKER_CONTAINER% >NUL 2>NUL || exit /b 0
-            '''
-        }
-
-        failure {
-            // Fail olursa log basmak çok işe yarıyor
-            bat '''
-            echo ---- FAIL DEBUG: docker ps ----
+            echo ---- docker ps ----
             docker ps -a
-            echo ---- FAIL DEBUG: docker logs ----
-            docker logs %DOCKER_CONTAINER% 2>NUL || echo "No container logs"
+            echo ---- docker logs ----
+            docker logs %DOCKER_CONTAINER% 2>NUL || echo No container logs
+            docker rm -f %DOCKER_CONTAINER% >NUL 2>NUL || exit /b 0
             '''
         }
     }
