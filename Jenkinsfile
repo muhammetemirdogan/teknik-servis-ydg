@@ -16,7 +16,6 @@ pipeline {
     }
 
     stages {
-
         stage('1- Checkout from GitHub') {
             steps {
                 checkout([
@@ -32,9 +31,7 @@ pipeline {
 
         stage('2- Build') {
             steps {
-                bat '''
-                call mvnw -B -DskipTests clean package
-                '''
+                bat 'call mvnw -B -DskipTests clean package'
             }
         }
 
@@ -66,31 +63,25 @@ pipeline {
                 bat '''
                 setlocal EnableExtensions
 
-                REM Dockerfile var mi kontrol et
                 if not exist Dockerfile (
-                  echo Dockerfile bulunamadi! repo root'a ekleyip commit/push yap.
+                  echo Dockerfile bulunamadi
                   dir
                   exit /b 1
                 )
 
-                REM Eski container varsa sil
                 docker rm -f %DOCKER_CONTAINER% >NUL 2>NUL
 
-                REM Port kullaniliyor mu kontrol et
                 netstat -aon | findstr :%APP_PORT% | findstr LISTENING >NUL
                 if %ERRORLEVEL%==0 (
-                  echo PORT %APP_PORT% dolu gorunuyor. Bosalt ve tekrar dene.
+                  echo PORT %APP_PORT% dolu
                   netstat -aon | findstr :%APP_PORT% | findstr LISTENING
                   exit /b 1
                 )
 
-                REM Image build
                 docker build -t %DOCKER_IMAGE% .
 
-                REM Container run (container icinde 8081)
                 docker run -d --rm -p %APP_PORT%:8081 --name %DOCKER_CONTAINER% %DOCKER_IMAGE%
 
-                REM ---- HEALTHCHECK (PowerShell - stabil) ----
                 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
                   "$ErrorActionPreference='SilentlyContinue';" ^
                   "$urls=@('%BASE_URL%/actuator/health','%BASE_URL%/api/servis-kayitlari');" ^
@@ -102,8 +93,10 @@ pipeline {
                   "}" ^
                   "exit 1"
 
-                if %ERRORLEVEL% NEQ 0 (
-                  echo Uygulama ayaga kalkmadi! (healthcheck fail)
+                set "HC=%ERRORLEVEL%"
+
+                if not "%HC%"=="0" (
+                  echo Uygulama ayaga kalkmadi - healthcheck fail
                   echo ---- docker ps ----
                   docker ps -a
                   echo ---- docker logs ----
@@ -113,6 +106,7 @@ pipeline {
 
                 echo Uygulama ayakta: %BASE_URL%
                 endlocal
+                exit /b 0
                 '''
             }
         }
@@ -138,19 +132,21 @@ pipeline {
 
             archiveArtifacts artifacts: 'target/surefire-reports-*/**/*.xml,target/failsafe-reports/**/*.xml',
                              allowEmptyArchive: true
-
-            bat '''
-            docker rm -f %DOCKER_CONTAINER% >NUL 2>NUL || exit /b 0
-            '''
         }
 
         failure {
+            // bu blok ASLA build'i tekrar fail etmesin
             bat '''
             echo ---- FAIL DEBUG: docker ps ----
             docker ps -a
             echo ---- FAIL DEBUG: docker logs ----
-            docker logs %DOCKER_CONTAINER% 2>NUL || echo "No container logs"
+            docker logs %DOCKER_CONTAINER% 2>NUL || echo No container logs
+            exit /b 0
             '''
+        }
+
+        cleanup {
+            bat 'docker rm -f %DOCKER_CONTAINER% >NUL 2>NUL || exit /b 0'
         }
     }
 }
