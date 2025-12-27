@@ -7,6 +7,11 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
+    // ÖNEMLİ: Bu isim, Manage Jenkins -> Tools -> Git installations'da verdiğin isimle birebir aynı olmalı
+    tools {
+        git 'Git-2.48'
+    }
+
     environment {
         DOCKER_IMAGE      = "teknik-servis-image"
         DOCKER_CONTAINER  = "teknik-servis-container"
@@ -16,6 +21,18 @@ pipeline {
     }
 
     stages {
+
+        stage('0- Debug Git (Jenkins sees)') {
+            steps {
+                bat '''
+                echo ==== GIT DEBUG ====
+                where git
+                git --version
+                echo ===================
+                '''
+            }
+        }
+
         stage('1- Checkout from GitHub') {
             steps {
                 checkout([
@@ -24,7 +41,13 @@ pipeline {
                     userRemoteConfigs: [[
                         url: 'https://github.com/muhammetemirdogan/teknik-servis-ydg.git',
                         credentialsId: 'github-ydg-token'
-                    ]]
+                    ]],
+                    // Jenkins'in changelog hesaplamak için whatchanged koşturmasını azaltmak için:
+                    // (tam garanti değil ama faydalı)
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [
+                        [$class: 'CleanBeforeCheckout']
+                    ]
                 ])
             }
         }
@@ -37,24 +60,13 @@ pipeline {
 
         stage('3- Unit Tests') {
             steps {
-                bat '''
-                call mvnw -B ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-unit ^
-                  test
-                '''
+                bat 'call mvnw -B -Dsurefire.reportsDirectory=target/surefire-reports-unit test'
             }
         }
 
         stage('4- Integration Tests') {
             steps {
-                bat '''
-                call mvnw -B ^
-                  -Dtest=*IT ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-it ^
-                  -Dspring.sql.init.mode=never ^
-                  -Dspring.jpa.hibernate.ddl-auto=create-drop ^
-                  test
-                '''
+                bat 'call mvnw -B -Dtest=*IT -Dsurefire.reportsDirectory=target/surefire-reports-it -Dspring.sql.init.mode=never -Dspring.jpa.hibernate.ddl-auto=create-drop test'
             }
         }
 
@@ -93,9 +105,7 @@ pipeline {
                   "}" ^
                   "exit 1"
 
-                set "HC=%ERRORLEVEL%"
-
-                if not "%HC%"=="0" (
+                if %ERRORLEVEL% NEQ 0 (
                   echo Uygulama ayaga kalkmadi - healthcheck fail
                   echo ---- docker ps ----
                   docker ps -a
@@ -113,14 +123,7 @@ pipeline {
 
         stage('6- Selenium (All Scenarios)') {
             steps {
-                bat '''
-                call mvnw -B ^
-                  -Dtest=com.example.teknikservis.selenium.Senaryo*SeleniumTest ^
-                  -Dsurefire.reportsDirectory=target/surefire-reports-selenium ^
-                  -DbaseUrl=%BASE_URL% ^
-                  -Dheadless=%SELENIUM_HEADLESS% ^
-                  test
-                '''
+                bat 'call mvnw -B -Dtest=com.example.teknikservis.selenium.Senaryo*SeleniumTest -Dsurefire.reportsDirectory=target/surefire-reports-selenium -DbaseUrl=%BASE_URL% -Dheadless=%SELENIUM_HEADLESS% test'
             }
         }
     }
@@ -135,7 +138,7 @@ pipeline {
         }
 
         failure {
-            // bu blok ASLA build'i tekrar fail etmesin
+            // Bu blok build'i tekrar fail etmesin
             bat '''
             echo ---- FAIL DEBUG: docker ps ----
             docker ps -a
