@@ -61,9 +61,10 @@ pipeline {
 
         stage('3- Unit Tests') {
             steps {
-                bat 'call mvnw -B -Dsurefire.reportsDirectory=target/surefire-reports-unit test'
+                bat 'call mvnw -B -Dtest=*,!com.example.teknikservis.selenium.*SeleniumTest -Dsurefire.reportsDirectory=target/surefire-reports-unit test'
             }
         }
+
 
         stage('4- Integration Tests') {
             steps {
@@ -100,11 +101,18 @@ pipeline {
                   "$urls=@('%BASE_URL%/actuator/health','%BASE_URL%/api/servis-kayitlari');" ^
                   "for($i=1;$i -le 40;$i++){" ^
                   "  foreach($u in $urls){" ^
-                  "    try{ $r=Invoke-WebRequest -UseBasicParsing -Uri $u -TimeoutSec 2; if($r.StatusCode -ge 200 -and $r.StatusCode -lt 500){ Write-Host 'HEALTH OK:' $u; exit 0 } } catch {}" ^
+                  "    try{" ^
+                  "      $r=Invoke-WebRequest -UseBasicParsing -Uri $u -TimeoutSec 2;" ^
+                  "      if($r.StatusCode -eq 200){" ^
+                  "        Write-Host 'HEALTH OK:' $u;" ^
+                  "        exit 0" ^
+                  "      }" ^
+                  "    } catch {}" ^
                   "  }" ^
                   "  Start-Sleep -Seconds 2" ^
                   "}" ^
                   "exit 1"
+
 
                 if %ERRORLEVEL% NEQ 0 (
                   echo Uygulama ayaga kalkmadi - healthcheck fail
