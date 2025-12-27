@@ -9,7 +9,8 @@ pipeline {
 
     // ÖNEMLİ: Bu isim, Manage Jenkins -> Tools -> Git installations'da verdiğin isimle birebir aynı olmalı
     tools {
-        git 'Git-2.48'
+        git 'git-2.48'
+
     }
 
     environment {
