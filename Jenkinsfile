@@ -84,6 +84,11 @@ pipeline {
                 )
 
                 docker rm -f %DOCKER_CONTAINER% >NUL 2>NUL
+                for /f "tokens=5" %%a in ('netstat -aon ^| findstr :%APP_PORT% ^| findstr LISTENING') do (
+                  echo Killing process on port %APP_PORT% PID=%%a
+                  taskkill /F /PID %%a >NUL 2>NUL
+                )
+
 
                 netstat -aon | findstr :%APP_PORT% | findstr LISTENING >NUL
                 if %ERRORLEVEL%==0 (
